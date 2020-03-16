@@ -1,4 +1,4 @@
-# Letter: Trends in Gender of Authors Among Major Medical Journals in the Field of Oncology
+# Trends in Gender of Authors Among Major Medical Journals in the Field of Oncology
 
 
 **Authors**  
