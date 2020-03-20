@@ -11,6 +11,7 @@ library(dplyr)
 library(ggplot2)
 library(rjson)
 library(httr)
+library(reshape)
 
 # ----- Get data from PubMed -----
 
@@ -25,24 +26,35 @@ terms_query <- '("Neoplasms"[Mesh])
       OR ("Lancet Oncol"[JOURNAL])
       OR ("J Natl Cancer Inst"[JOURNAL])
       OR ("Cancer"[JOURNAL])
-      OR  ("ANN Oncol"[JOURNAL])
+      OR ("ANN Oncol"[JOURNAL])
       OR ("Int J Radiat Oncol Biol Phys"[JOURNAL])
       OR ("Radiother Oncol"[JOURNAL]))
   AND humans[MeSH Terms]
-  AND (2005/01/01:2005/12/31[Date - Publication] OR 2005[Date - Publication] 
-       OR 2006/01/01:2006/12/31[Date - Publication] OR 2006[Date - Publication])
+  AND (2002/01/01:2017/12/31[Date - Publication]
+       OR 2002[Date - Publication] OR 2003[Date - Publication]
+       OR 2004[Date - Publication] OR 2005[Date - Publication]
+       OR 2006[Date - Publication] OR 2007[Date - Publication]
+       OR 2008[Date - Publication] OR 2009[Date - Publication]
+       OR 2010[Date - Publication] OR 2011[Date - Publication]
+       OR 2012[Date - Publication] OR 2013[Date - Publication]
+       OR 2014[Date - Publication] OR 2015[Date - Publication]
+       OR 2016[Date - Publication] OR 2017[Date - Publication]
+       )
   NOT (Letter[ptyp] OR Case Reports[ptyp] OR Comment[sb] OR Editorial[ptyp] OR Review[ptyp] OR News[ptyp] OR Congress[ptyp])
-  NOT (1800/01/01:2004/12/31[Date - Publication])
-  NOT (2007/01/01:3000[Date - Publication])'
+  NOT (1800/01/01:2001/12/31[Date - Publication])
+  NOT (2018/01/01:3000[Date - Publication])'
 
 # Get information
-query <- EUtilsSummary(terms_query, mindate = 2005, maxdate = 2006, retmax = 10000)
+query <- EUtilsSummary(terms_query, mindate = 2002, maxdate = 2017, retmax = 50000)
 
 # Number of results
 QueryCount(query)
 
-# Get the data from PubMed
-records <- EUtilsGet(query, type = "efetch", db = "pubmed")
+# Get the data from PubMed (+1.5 hour to get the data)
+# Downloaded 19/03/2020
+#records <- EUtilsGet(query, type = "efetch", db = "pubmed")
+#save(records, file = "records.RData")
+load("records.RData")
 
 # ----- Data preprocessing  -----
 
@@ -60,7 +72,7 @@ class(authors[, 2]) <- "character"
 # Extract names
 for(i in 1:length(authors_list)){
   # Counter
-  if(i %% 100 == 0) print(i)
+  if(i %% 500 == 0) print(i)
   # Extract forenames from first and last authors
   authors$first_forename[i] <- authors_list[i][[1]][1,]$ForeName
   authors$last_forename[i] <- authors_list[i][[1]][nrow(authors_list[i][[1]]),]$ForeName
@@ -77,6 +89,7 @@ pubmed_data <- data.frame(
 )
 
 # See the first rows
+nrow(pubmed_data)
 head(pubmed_data)
 
 # To character
@@ -118,10 +131,13 @@ for(i in 1:nrow(pubmed_data)){
 }
 
 # keep only names with length > 1
+# 1999-2001 only have initials as names
+table(pubmed_data$Year)
 nrow(pubmed_data)
 pubmed_data <- pubmed_data %>% filter(nchar(first_forename)>1)
 pubmed_data <- pubmed_data %>% filter(nchar(last_forename)>1)
 nrow(pubmed_data)
+table(pubmed_data$Year)
 
 # Names more frequent
 table(pubmed_data$first_forename) %>% sort(decreasing = TRUE) %>% head(20)
@@ -174,13 +190,53 @@ pubmed_data$first_gender <- "none yet"
 pubmed_data$last_gender <- "none yet"
 
 # Merge to get the gender
-pubmed_data$first_gender <- left_join(x = pubmed_data, y = names_with_genders, by = c("first_forename" = "names")) %>% select(genders)
-pubmed_data$last_gender <- left_join(x = pubmed_data, y = names_with_genders, by = c("last_forename" = "names")) %>% select(genders)
+pubmed_data$first_gender <- left_join(x = pubmed_data, y = names_with_genders, by = c("first_forename" = "names"))$genders
+pubmed_data$last_gender <- left_join(x = pubmed_data, y = names_with_genders, by = c("last_forename" = "names"))$genders
 
 # Table of genders found - only 400 names!
 table(pubmed_data$first_gender, useNA = "always")
 table(pubmed_data$last_gender, useNA = "always")
 
 # Table of genders found - only 400 names!
-table(pubmed_data$first_gender, pubmed_data$Year ,useNA = "always")
+table(pubmed_data$first_gender, pubmed_data$Year, useNA = "always")
 table(pubmed_data$last_gender, pubmed_data$Year, useNA = "always")
+
+
+# ----- Analysis by year - FIRST -----
+df <- table(pubmed_data$first_gender, pubmed_data$Year)
+df <- rbind(df, df[2,]/df[1,])
+rownames(df)[3] <- "ratio_male_female"
+df <- melt(df) %>% filter(X2 != 2018, X1 == "ratio_male_female")
+df
+
+ggplot(df) + 
+  geom_line(aes(x = X2, y = value)) +
+  geom_hline(yintercept = 1, lty = 2, col = "red") +
+  ggtitle("Evolution of ratio male-female (First author) - Only 400 names with genders") +
+  ylim(c(1, 2.5)) +
+  ylab("Ratio male-female") + 
+  xlab("Year") +
+  theme_classic()
+
+
+# ----- Analysis by year - LAST -----
+df <- table(pubmed_data$last_gender, pubmed_data$Year)
+df <- rbind(df, df[2,]/df[1,])
+rownames(df)[3] <- "ratio_male_female"
+df <- melt(df) %>% filter(X2 != 2018, X1 == "ratio_male_female")
+df
+
+ggplot(df) + 
+  geom_line(aes(x = X2, y = value)) +
+  geom_hline(yintercept = 1, lty = 2, col = "red") +
+  ggtitle("Evolution of ratio male-female (Last author) - Only 400 names with genders") +
+  ylim(c(1, 5)) +
+  ylab("Ratio male-female") + 
+  xlab("Year") +
+  theme_classic()
+
+# ----- Analysis by journal -----
+
+
+
+
