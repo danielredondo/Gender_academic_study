@@ -500,3 +500,33 @@ ggplot(df) +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
 ggsave(filename = "plots/n_last.png", width = 200, height = 200, units = "mm")
+
+# Trends Ratio male/female over time (accouting for overdispersion)
+library(sandwich)
+
+# First author
+trendF <- glm(n ~ I(first_gender) + Year + first_gender:Year, family=poisson(link="log"), data=pubmed_data_F)
+summary(trendF)
+confint(trendF)
+# Robust Standard Errors (accouting for overdispersion)
+cov.F <- vcovHC(trendF, type="HC0")
+stdf.err <- sqrt(diag(cov.F))
+rf.est <- cbind(Estimate= coef(trendF), "Robust SE" = stdf.err,
+                "Pr(>|z|)" = 2 * pnorm(abs(coef(trendF)/stdf.err), lower.tail=FALSE),
+                LL = coef(trendF) - 1.96 * stdf.err,
+                UL = coef(trendF) + 1.96 * stdf.err)
+rf.est
+
+#Second author
+trendL <- glm(n ~ I(last_gender) + Year + last_gender:Year, family=poisson(link="log"), data=pubmed_data_L)
+summary(trendL)
+confint(trendL)
+
+# Robust Standard Errors (accouting for overdispersion)
+cov.L <- vcovHC(trendF, type="HC0")
+stdl.err <- sqrt(diag(cov.L))
+rl.est <- cbind(Estimate= coef(trendL), "Robust SE" = stdl.err,
+                "Pr(>|z|)" = 2 * pnorm(abs(coef(trendL)/stdl.err), lower.tail=FALSE),
+                LL = coef(trendL) - 1.96 * stdl.err,
+                UL = coef(trendL) + 1.96 * stdl.err)
+rl.est
