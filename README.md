@@ -1,10 +1,9 @@
 # Trends in Gender of Authors Among Major Medical Journals in the Field of Oncology
 
-
 **Authors**  
 *(include authors)*
 
-# ABSTRACT
+# Abstract
 **Importance**: This is a comprehensive analysis of gender authorship in original research as it is lacking in the field of oncology.
 
 **Objective**: to evaluate the temporal trend of gender ratio of first and last authors in the global oncological research field among major general medical and oncology journals, and compared to the gender composition of the US oncologists. Second, we examined the gender pattern in coauthorship.
@@ -19,5 +18,8 @@
 
 **Keywords**: *gender studies*, *neoplasms*, *research*, *cancer epidemiology*, *publications*.
 
+<img src="img/figure1.png" width="600"/>
+
+<img src="img/figure2.png" width="600"/>
 
 This repository provides open source code for replicability.
