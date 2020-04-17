@@ -18,8 +18,9 @@
 
 **Keywords**: *gender studies*, *neoplasms*, *research*, *cancer epidemiology*, *publications*.
 
-<img src="img/figure1.png" width="700"/>
+![](img/figure1.png)
 
-<img src="img/figure2.png" width="700"/>
+![](img/figure2.png)
+
 
 This repository provides open source code for replicability.
