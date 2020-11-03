@@ -1,7 +1,7 @@
 # Trends in Gender of Authors Among Major Medical Journals in the Field of Oncology
 
 **Authors**  
-*(include authors)*
+*Shing Fung Lee, Daniel Redondo-Sanchez, María José Sánchez-Pérez, Bizu Gelaye, Chi Leung Chiang, Irene Oi-Ling Wong, Denise Shuk-Ting Cheung, Miguel Angel Luque-Fernandez*
 
 # Abstract
 **Importance**: This is a comprehensive analysis of gender authorship in original research as it is lacking in the field of oncology.
