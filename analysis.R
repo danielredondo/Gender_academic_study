@@ -96,6 +96,10 @@ pubmed_data <- data.frame(
   "Journal" = ISOAbbreviation(records)
 )
 
+# 14/04/2020 Remove Ann. Oncol and JAMA Oncol
+pubmed_data <- pubmed_data %>% 
+  filter(! Journal %in% c("JAMA Oncol", "Ann. Oncol."))
+
 # See the first rows
 nrow(pubmed_data)
 head(pubmed_data)
@@ -168,7 +172,7 @@ head(names)
 # - accuracy (Percentage of accuracy of the gender)
 
 ## # API of GenderAPI
-## api = "<INSERT API>"
+## api = "uNcRMbLdfhrTDPuAEs"
 
 ## # Get the genders
 ## for(i in 1:length(names)){
@@ -247,7 +251,7 @@ nrow(names_with_genders)
 
 # Establish a threshold for accuracy (in percentage)
 nrow(names_with_genders)
-threshold <- 75
+threshold <- 60
 # See names + genders that are going to be removed
 names_with_genders %>% filter(accuracy < threshold) %>% head(10)
 # Remove
@@ -279,6 +283,19 @@ pubmed_data$first_gender <- left_join(x = pubmed_data, y = names_with_genders,
                                       by = c("first_forename" = "name"))$gender %>% as.character
 pubmed_data$last_gender <- left_join(x = pubmed_data, y = names_with_genders,
                                      by = c("last_forename" = "name"))$gender %>% as.character
+
+# ----- Pubmed_data (each row is an article) -----
+
+# Added 27/03/2020
+first_and_last_combinations <- pubmed_data %>%
+  filter(is.na(first_gender) == FALSE, is.na(last_gender) == FALSE) %>% 
+  mutate(first_and_last = paste0("first_", first_gender, "_last_", last_gender))
+
+# Table
+table(first_and_last_combinations$first_and_last)
+
+# Save file
+save(first_and_last_combinations, file = "masterdata/first_and_last_combinations.RData")
 
 # ----- Master data file -----
 
@@ -342,8 +359,8 @@ write.csv(master, file = "master.csv", row.names = FALSE)
 
 # ----- Results - Overall male-female ratio -----
 
-table(pubmed_data$first_gender, useNA = "always") # Ratio: 21197/11490 = 1.84
-table(pubmed_data$last_gender, useNA = "always")  # Ratio: 25477/7728  = 3.30
+table(pubmed_data$first_gender, useNA = "always") 
+table(pubmed_data$last_gender, useNA = "always")
 
 # ----- Figures - Ratio male/female -----
 
@@ -357,7 +374,8 @@ df
 
 ggplot(df) + 
   geom_line(aes(x = year, y = value), size = 0.75) +
-  geom_hline(yintercept = 1, lty = 2, col = "red", size = 0.5) +
+  #dgeom_col(aes(x = year, y = value), size = 0.75, col = "black", fill = "black") +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
   ggtitle("Evolution of ratio male-female (First author)") +
   ylab("Ratio male-female") + 
   ylim(c(0, 5)) +
@@ -365,6 +383,18 @@ ggplot(df) +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
 ggsave(filename = "plots/r_first.png", width = 200, height = 200, units = "mm")
+
+# Save graph to combine
+graph_first <- ggplot(df) + 
+  geom_line(aes(x = year, y = value), size = 0.75) +
+  #dgeom_col(aes(x = year, y = value), size = 0.75, col = "black", fill = "black") +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
+  ggtitle("Evolution of ratio male-female (First author)") +
+  ylab("Ratio male-female") + 
+  ylim(c(0, 5)) +
+  scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
 
 # Last author
 df <- table(pubmed_data$last_gender, pubmed_data$Year)
@@ -376,7 +406,8 @@ df
 
 ggplot(df) + 
   geom_line(aes(x = year, y = value), size = 0.75) +
-  geom_hline(yintercept = 1, lty = 2, col = "red", size = 0.5) +
+  #geom_col(aes(x = year, y = value), size = 0.75, col = "black", fill = "black") +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
   ggtitle("Evolution of ratio male-female (Last author)") +
   ylab("Ratio male-female") + 
   ylim(c(0, 5)) +
@@ -386,11 +417,72 @@ ggplot(df) +
 
 ggsave(filename = "plots/r_last.png", width = 200, height = 200, units = "mm")
 
+# Save graph to combine
+graph_last <- ggplot(df) + 
+  geom_line(aes(x = year, y = value), size = 0.75) +
+  #geom_col(aes(x = year, y = value), size = 0.75, col = "black", fill = "black") +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
+  ggtitle("Evolution of ratio male-female (Last author)") +
+  ylab("Ratio male-female") + 
+  ylim(c(0, 5)) +
+  scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Combine figures
+library(ggpubr)
+ggarrange(graph_first, graph_last)
+ggsave(filename = "plots/r_first_last_combined.png", width = 400, height = 200, units = "mm")
+
+# ----- 21/09/2020 NEW figures - Ratio male/female -----
+
+# First author
+df <- table(pubmed_data$first_gender, pubmed_data$Year)
+df <- rbind(df, df["male",]/df["female",])
+rownames(df)[3] <- "ratio_male_female"
+df <- melt(df) %>% filter(X1 == "ratio_male_female")
+names(df) <- c("ratio", "year", "value")
+df
+
+# Last author
+df2 <- table(pubmed_data$last_gender, pubmed_data$Year)
+df2 <- rbind(df2, df2["male",]/df2["female",])
+rownames(df2)[3] <- "ratio_male_female"
+df2 <- melt(df2) %>% filter(X1 == "ratio_male_female")
+names(df2) <- c("ratio", "year", "value")
+df2
+
+# cbind first and last
+names(df) <- c("ratio", "year", "value_first")
+
+df$year == df2$year
+
+df <- cbind(df, "value_last" = df2$value)
+head(df)
+
+ggplot(df) + 
+  geom_line(aes(x = year, y = value_first, col = "Ratio male/female (first author)"), size = 1.5) +
+  geom_line(aes(x = year, y = value_last,  col = "Ratio male/female (last author)"),  size = 1.5) +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
+  ggtitle("Evolution of ratio male-female") +
+  ylab("Ratio male-female") + 
+  ylim(c(0, 5)) +
+  scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
+  theme_classic() +
+  theme(text = element_text(color = "black"),
+        legend.title = element_blank(),
+        legend.position="top") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave(filename = "plots/20200921_r_first_and_last.png", width = 250, height = 200, units = "mm")
+
 # ----- Figures - Ratio male/female by journal -----
 
 # Only 4 journals with more articles
 table(pubmed_data$Journal) %>% sort(decreasing = TRUE)
 journals <- table(pubmed_data$Journal) %>% sort(decreasing = TRUE) %>% head(4) %>% names()
+
+# journals <- c(journals, "N. Engl. J. Med.")
 
 # First author
 df <- pubmed_data %>% 
@@ -421,14 +513,26 @@ head(df)
 
 ggplot(df) + 
   geom_line(aes(x = Year, y = ratio), size = 0.75) +
-  geom_hline(yintercept = 1, lty = 2, col = "red", size = 0.5) +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
   ggtitle("Evolution of ratio male-female (First author)") +
-  ylab("Ratio male-female") + 
   scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
   facet_wrap(vars(Journal)) +
+  scale_y_continuous("Ratio male-female", breaks = 1:11) +
+  theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
 
 ggsave(filename = "plots/r_first_by_journal.png", width = 200, height = 200, units = "mm")
+
+# Save graph to combine figures
+graph_first_by_journal <- ggplot(df) + 
+  geom_line(aes(x = Year, y = ratio), size = 0.75) +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
+  ggtitle("Evolution of ratio male-female (First author)") +
+  scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
+  facet_wrap(vars(Journal)) +
+  scale_y_continuous("Ratio male-female", breaks = 1:11) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
 
 # Last author
 df <- pubmed_data %>% 
@@ -459,14 +563,115 @@ head(df)
 
 ggplot(df) + 
   geom_line(aes(x = Year, y = ratio), size = 0.75) +
-  geom_hline(yintercept = 1, lty = 2, col = "red", size = 0.5) +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
   ggtitle("Evolution of ratio male-female (Last author)") +
-  ylab("Ratio male-female") + 
   scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
+  scale_y_continuous("Ratio male-female", breaks = 1:11) +
   facet_wrap(vars(Journal)) +
+  theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
 
 ggsave(filename = "plots/r_last_by_journal.png", width = 200, height = 200, units = "mm")
+
+# Save graph to combine figures
+graph_last_by_journal <- ggplot(df) + 
+  geom_line(aes(x = Year, y = ratio), size = 0.75) +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
+  ggtitle("Evolution of ratio male-female (Last author)") +
+  scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
+  scale_y_continuous("Ratio male-female", breaks = 1:11) +
+  facet_wrap(vars(Journal)) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Combine figures
+library(ggpubr)
+ggarrange(graph_first_by_journal, graph_last_by_journal)
+ggsave(filename = "plots/r_first_last_combined_by_journal.png", width = 400, height = 200, units = "mm")
+
+# ----- 21/09/2020 NEW figures - Ratio male/female by journal -----
+
+# Only 4 journals with more articles
+table(pubmed_data$Journal) %>% sort(decreasing = TRUE)
+journals <- table(pubmed_data$Journal) %>% sort(decreasing = TRUE) %>% head(4) %>% names()
+
+# journals <- c(journals, "N. Engl. J. Med.")
+
+# First author
+df <- pubmed_data %>% 
+  filter(is.na(first_gender) == FALSE) %>%
+  filter(is.na(Journal) == FALSE) %>%
+  filter(Journal %in% journals) %>%
+  mutate(first_gender = as.character(first_gender)) %>%
+  mutate(Journal = as.character(Journal)) %>%
+  group_by(Year, Journal, first_gender) %>%
+  summarise(n = n()) %>% 
+  mutate(n = as.double(n)) %>%
+  as.data.frame()
+
+# Calculate ratio
+for(i in 2002:2019){
+  for(j in 1:length(journals)){
+    ratio <- df[df$Year == i & df$Journal == journals[j] & df$first_gender == "male", "n"] / 
+      df[df$Year == i & df$Journal == journals[j] & df$first_gender == "female", "n"]
+    aux <- data.frame(i, journals[j], "ratio", ratio)
+    names(aux) <- names(df)
+    df <- rbind(df, aux)
+  }
+}
+
+df <- df %>% filter(first_gender == "ratio")
+names(df)[4] <- "ratio_first"
+head(df)
+
+# Last author
+df2 <- pubmed_data %>% 
+  filter(is.na(last_gender) == FALSE) %>%
+  filter(is.na(Journal) == FALSE) %>%
+  filter(Journal %in% journals) %>%
+  mutate(last_gender = as.character(last_gender)) %>%
+  mutate(Journal = as.character(Journal)) %>%
+  group_by(Year, Journal, last_gender) %>%
+  summarise(n = n()) %>% 
+  mutate(n = as.double(n)) %>%
+  as.data.frame()
+
+# Calculate ratio
+for(i in 2002:2019){
+  for(j in 1:length(journals)){
+    ratio <- df2[df2$Year == i & df2$Journal == journals[j] & df2$last_gender == "male", "n"] / 
+      df2[df2$Year == i & df2$Journal == journals[j] & df2$last_gender == "female", "n"]
+    aux <- data.frame(i, journals[j], "ratio", ratio)
+    names(aux) <- names(df2)
+    df2 <- rbind(df2, aux)
+  }
+}
+
+df2 <- df2 %>% filter(last_gender == "ratio")
+names(df2)[4] <- "ratio_last"
+head(df2)
+
+# cbind first and last
+df$Year == df2$Year
+df$Journal == df2$Journal
+df <- cbind(df, "ratio_last" = df2$ratio_last)
+head(df)
+
+ggplot(df) + 
+  geom_line(aes(x = Year, y = ratio_first, col = "Ratio male/female (first author)"), size = 1) +
+  geom_line(aes(x = Year, y = ratio_last, col = "Ratio male/female (last author)"), size = 1) +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
+  ggtitle("Evolution of ratio male-female") +
+  scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
+  scale_y_continuous("Ratio male-female", breaks = 1:11) +
+  facet_wrap(vars(Journal)) +
+  theme_classic() +
+  theme(text = element_text(color = "black"),
+        legend.title = element_blank(),
+        legend.position="top") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave(filename = "plots/20200921_r_first_and_last_by_journal.png", width = 250, height = 200, units = "mm")
 
 # ----- Figures - Number -----
 
@@ -477,7 +682,7 @@ df
 
 ggplot(df) + 
   geom_line(aes(x = year, y = value, color = gender), size = 0.75) +
-  geom_hline(yintercept = 1, lty = 2, col = "red", size = 0.5) +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
   ggtitle("Evolution of number of articles by gender (First author)") +
   ylab("Number of articles") + 
   scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
@@ -493,7 +698,7 @@ df
 
 ggplot(df) + 
   geom_line(aes(x = year, y = value, color = gender), size = 0.75) +
-  geom_hline(yintercept = 1, lty = 2, col = "red", size = 0.5) +
+  geom_hline(yintercept = 1, lty = 2, col = "gray60", size = 0.5) +
   ggtitle("Evolution of number of articles by gender (Last author)") +
   ylab("Number of articles") + 
   scale_x_continuous("Year", breaks = seq(2002, 2020, 2)) +
@@ -503,26 +708,28 @@ ggsave(filename = "plots/n_last.png", width = 200, height = 200, units = "mm")
 
 # Trends Ratio male/female over time (accouting for overdispersion)
 library(sandwich)
+load("First.RData")
+load("Last.RData")
 
 # First author
 trendF <- glm(n ~ I(first_gender) + Year + first_gender:Year, family=poisson(link="log"), data=pubmed_data_F)
 summary(trendF)
 confint(trendF)
-# Robust Standard Errors (accouting for overdispersion)
+# Robust Standard Errors (accounting for overdispersion)
 cov.F <- vcovHC(trendF, type="HC0")
 stdf.err <- sqrt(diag(cov.F))
 rf.est <- cbind(Estimate= coef(trendF), "Robust SE" = stdf.err,
-                "Pr(>|z|)" = 2 * pnorm(abs(coef(trendF)/stdf.err), lower.tail=FALSE),
-                LL = coef(trendF) - 1.96 * stdf.err,
-                UL = coef(trendF) + 1.96 * stdf.err)
+               "Pr(>|z|)" = 2 * pnorm(abs(coef(trendF)/stdf.err), lower.tail=FALSE),
+               LL = coef(trendF) - 1.96 * stdf.err,
+               UL = coef(trendF) + 1.96 * stdf.err)
 rf.est
 
-#Second author
+# Last author
 trendL <- glm(n ~ I(last_gender) + Year + last_gender:Year, family=poisson(link="log"), data=pubmed_data_L)
 summary(trendL)
 confint(trendL)
 
-# Robust Standard Errors (accouting for overdispersion)
+# Robust Standard Errors (accounting for overdispersion)
 cov.L <- vcovHC(trendF, type="HC0")
 stdl.err <- sqrt(diag(cov.L))
 rl.est <- cbind(Estimate= coef(trendL), "Robust SE" = stdl.err,
