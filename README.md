@@ -16,11 +16,11 @@ Primary and secondary outcome measures: the percentages of first and last author
 
 **Results**
 
-We identified the gender of first and last authors for 32,452 research articles. The proportions of female first and last authors increased from 28% and 17% in 2002, respectively, to 36% and 30% in 2019, respectively. The first and last author gender ratios decreased by 1.5% and 2.6% per year, respectively (first author: incidence rate ratio [IRR], 0.98; 95% confidence interval [CI], 0.97 to 1.00 and last author: IRR, 0.97; 95% CI, 0.96 to 0.99). Male first and last authorship was the most common combination. Male-male pairs significantly decreased by 2% over time (IRR, 0.98; 95% CI, 0.98 to 0.99), whereas male-female and female-female pairs increased by 2.0% and 5.0%, respectively (IRR, 1.02; 95% CI, 1.01 to 1.03 and IRR, 1.05; 95% CI, 1.04 to 1.06, respectively).
+We identified 34,624 research articles, in which 32,452 had the gender of both first and last authors identified. We identified 11,650 (33.6%) and 7,908 (22.8%) with women as first and last author, respectively. The proportions of female first and last authors increased from 26.6% and 16.2% in 2002, respectively, to 32.9% and 27.5% in 2019, respectively. The first and last author gender ratio (male/female) decreased by 1.5% and 2.6% per year, respectively (first author: incidence rate ratio [IRR], 0.98; 95% confidence interval [CI], 0.97-1.00 and last author: IRR, 0.97; 95% CI, 0.96-0.99). Male first and last authorship was the most common combination. male-female and female-female pairs increased by 2.0% and 5.0%, respectively (IRR, 1.02; 95% CI, 1.01 - 1.03 and IRR, 1.05; 95% CI, 1.04-1.06, respectively).
 
 **Conclusions**
 
-We observed an increase in female authors over the study period. However, the continued underrepresentation of women as first authors means that that more efforts to address parity for the advancement of women in academic oncology are needed. 
+The continued underrepresentation of women means that that more efforts to address parity for the advancement of women in academic oncology and initiatives to promote academic choices and careers of women at the student level are needed.
 
 **Keywords**: *academic success*; *authorship*; *neoplasms*; *research*; *publications*.
 

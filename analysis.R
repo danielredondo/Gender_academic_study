@@ -69,21 +69,23 @@ load("records.RData")
 # Convert authors from list to dataframe
 authors_list <- Author(records)
 
-# Initialise data.frame empty
+# Initialise authors
 authors <- data.frame(first_forename = rep("", length(authors_list)),
-                      last_forename = rep("", length(authors_list)))
+                      last_forename = rep("", length(authors_list)),
+                      number_authors = NA)
 
 # Convert to character
 class(authors[, 1]) <- "character"
 class(authors[, 2]) <- "character"
 
-# Extract names
+# Extract names and number of authors
 for(i in 1:length(authors_list)){
   # Counter
   if(i %% 500 == 0) cat(".")
   # Extract forenames from first and last authors
   authors$first_forename[i] <- authors_list[i][[1]][1,]$ForeName
   authors$last_forename[i] <- authors_list[i][[1]][nrow(authors_list[i][[1]]),]$ForeName
+  authors$number_authors[i] <- max(authors_list[i][[1]]$order)
 }
 
 # Create data.frame
@@ -91,6 +93,7 @@ pubmed_data <- data.frame(
   "Title" = ArticleTitle(records),
   "first_forename" = as.character(authors$first_forename),
   "last_forename" = as.character(authors$last_forename),
+  "number_authors" = authors$number_authors,
   "PMID" = PMID(records),
   "Year" = YearPubmed(records),
   "Journal" = ISOAbbreviation(records)
@@ -172,7 +175,7 @@ head(names)
 # - accuracy (Percentage of accuracy of the gender)
 
 ## # API of GenderAPI
-## api = "uNcRMbLdfhrTDPuAEs"
+## api = ""
 
 ## # Get the genders
 ## for(i in 1:length(names)){
@@ -283,6 +286,35 @@ pubmed_data$first_gender <- left_join(x = pubmed_data, y = names_with_genders,
                                       by = c("first_forename" = "name"))$gender %>% as.character
 pubmed_data$last_gender <- left_join(x = pubmed_data, y = names_with_genders,
                                      by = c("last_forename" = "name"))$gender %>% as.character
+
+# Export pubmed_data
+save(pubmed_data, file = "pubmed_data.RData")
+write.csv(pubmed_data, file = "pubmed_data.csv", row.names = F)
+
+# ----- Analysis of single authored articles -----
+sa_articles <- pubmed_data %>%
+  filter(number_authors == "1") %>%
+  filter(!is.na(first_gender)) %>% 
+  select(Year, first_gender) %>% 
+  group_by(Year, first_gender) %>% 
+  summarise(n = n()) %>% 
+  reshape2::dcast(formula = Year ~ first_gender, value.var = "n") %>% 
+  mutate(ratio = round(male/female, 1))
+
+sa_articles
+
+ggplot(data = sa_articles, aes(x = Year, y = ratio, label = ratio)) +
+  geom_col(color = "grey") + 
+  geom_label(color = "white", fill = NA, label.size = 0, nudge_y = -0.3) +
+  scale_x_continuous(breaks = 2002:2019, minor_breaks = 2002:2019) + 
+  labs(x = "Year", y = "Male-female ratio for single-authored articles") +
+  theme_minimal() +
+  theme(axis.text = element_text(color = "black")) 
+ggsave(filename = "online_figure_2.png", width = 8, height = 5, dpi = 300)
+
+sum(sa_articles$female) + sum(sa_articles$male) # 977 articles
+977*100 / nrow(pubmed_data) # 2.8% of all articles with gender for first and last author
+977*100 / length(Author(records)) # 2.3% of all articles
 
 # ----- Pubmed_data (each row is an article) -----
 
